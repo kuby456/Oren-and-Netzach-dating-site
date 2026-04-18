@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ערוך סקשן</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0b0b0b;
+  color: #fff;
+  padding: 16px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #1f2937;
+  color: #fff;
+  cursor: pointer;
+}
+
+textarea {
+  width: 100%;
+  height: 200px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #111;
+  color: #fff;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.status {
+  margin-top: 10px;
+  color: #4ade80;
+}
+
+/* מודאל */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-box {
+  background: #111;
+  padding: 20px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 300px;
+  text-align: center;
+}
+
+.modal-box button {
+  margin-top: 15px;
+  width: 100%;
+  background: #22c55e;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <button id="backBtn">חזור</button>
+  <button id="saveBtn">שמור</button>
+</div>
+
+<h2 id="title"></h2>
+
+<textarea id="text"></textarea>
+
+<div class="status" id="status"></div>
+
+<!-- מודאל -->
+<div id="modal" class="modal">
+  <div class="modal-box">
+    <h3>יש שינויים שלא נשמרו</h3>
+    <p>נשמור ונחזור?</p>
+    <button id="saveLeaveBtn">שמור וצא</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// ===== חיבור סופרבייס =====
+const SUPABASE_URL = "https://mgybwqpcrismnnfxizwe.supabase.co";
+const SUPABASE_KEY = "sb_publishable_fQzZ5TohOxEWLpnEeogRgg_FEepnXB7";
+  
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== אלמנטים =====
+const textEl = document.getElementById("text");
+const modal = document.getElementById("modal");
+const status = document.getElementById("status");
+const titleEl = document.getElementById("title");
+
+// ===== ID =====
+const params = new URLSearchParams(window.location.search);
+const sectionId = Number(params.get("id"));
+
+// ===== מצב =====
+let originalText = "";
+let isDirty = false;
+
+// ===== טעינה מהשרת =====
+async function loadSection() {
+  const { data, error } = await supabaseClient
+    .from("sections")
+    .select("*")
+    .eq("id", sectionId)
+    .single();
+
+  if (error) {
+    console.error(error);
+    titleEl.innerText = "שגיאה בטעינה";
+    return;
+  }
+
+  titleEl.innerText = data.title;
+  textEl.value = data.content || "";
+
+  originalText = textEl.value;
+  isDirty = false;
+}
+
+// ===== שמירה =====
+async function save() {
+  status.innerText = "שומר...";
+
+  const { error } = await supabaseClient
+    .from("sections")
+    .update({ content: textEl.value })
+    .eq("id", sectionId);
+
+  if (error) {
+    status.innerText = "שגיאה בשמירה";
+    console.error(error);
+    return;
+  }
+
+  originalText = textEl.value;
+  isDirty = false;
+  status.innerText = "נשמר!";
+}
+
+// ===== שינוי =====
+textEl.addEventListener("input", () => {
+  isDirty = textEl.value !== originalText;
+});
+
+// ===== חזור =====
+document.getElementById("backBtn").onclick = () => {
+  if (isDirty) {
+    modal.style.display = "flex";
+  } else {
+    window.location.href = "index.html";
+  }
+};
+
+// ===== שמור =====
+document.getElementById("saveBtn").onclick = save;
+
+// ===== שמור וצא =====
+document.getElementById("saveLeaveBtn").onclick = async () => {
+  await save();
+  window.location.href = "index.html";
+};
+
+// ===== התחלה =====
+loadSection();
+</script>
+
+</body>
+</html>

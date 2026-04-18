@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול סקשנים</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0b0b0b;
+  color: #fff;
+  padding: 16px;
+}
+
+h1 {
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.card {
+  background: #151515;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid #2a2a2a;
+  transition: 0.2s;
+}
+
+.card:hover {
+  background: #1f1f1f;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1> סקשנים נושא פעילות משותפת לבניית אתר שידוכים</h1>
+
+<div class="grid" id="grid"></div>
+
+<!-- 🔥 סופרבייס -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ===== חיבור =====
+const SUPABASE_URL = "https://mgybwqpcrismnnfxizwe.supabase.co";
+const SUPABASE_KEY = "sb_publishable_fQzZ5TohOxEWLpnEeogRgg_FEepnXB7";
+  
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// הסקשנים הקבועים שלך
+const DEFAULT_SECTIONS = [
+  { id: 1, title: "סקשן 1" },
+  { id: 2, title: "סקשן 2" },
+  { id: 3, title: "סקשן 3" },
+  { id: 4, title: "סקשן 4" },
+  { id: 5, title: "סקשן 5" },
+  { id: 6, title: "סקשן 6" },
+  { id: 7, title: "סקשן 7" },
+  { id: 8, title: "סקשן 8" }
+];
+
+// יוצר את הסקשנים אם הם עדיין לא קיימים ב-DB
+async function ensureSectionsExist() {
+  const { data, error } = await supabaseClient
+    .from("sections")
+    .select("id");
+
+  if (error) {
+    console.error("ensureSectionsExist error:", error);
+    return;
+  }
+
+  const existingIds = (data || []).map(item => item.id);
+
+  const missingSections = DEFAULT_SECTIONS.filter(
+    section => !existingIds.includes(section.id)
+  );
+
+  if (missingSections.length === 0) {
+    return;
+  }
+
+  const rowsToInsert = missingSections.map(section => ({
+    id: section.id,
+    title: section.title,
+    content: ""
+  }));
+
+  const { error: insertError } = await supabaseClient
+    .from("sections")
+    .insert(rowsToInsert);
+
+  if (insertError) {
+    console.error("insert sections error:", insertError);
+  }
+}
+
+// טוען את הסקשנים מהשרת
+async function loadSections() {
+  const { data, error } = await supabaseClient
+    .from("sections")
+    .select("id, title")
+    .order("id", { ascending: true });
+
+  if (error) {
+    console.error("loadSections error:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// מציג את הסקשנים בגריד
+async function renderSections() {
+  const grid = document.getElementById("grid");
+  const sections = await loadSections();
+
+  let html = "";
+
+  sections.forEach(sec => {
+    html += `
+      <div class="card" onclick="goToEdit(${sec.id})">
+        <div class="title">${sec.title}</div>
+      </div>
+    `;
+  });
+
+  grid.innerHTML = html;
+}
+
+// מעבר לדף עריכה
+function goToEdit(id) {
+  window.location.href = "edit.html?id=" + id;
+}
+
+// התחלה
+async function start() {
+  await ensureSectionsExist();
+  await renderSections();
+}
+
+start();
+</script>
+
+</body>
+</html>
