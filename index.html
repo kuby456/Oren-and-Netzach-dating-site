@@ -42,6 +42,14 @@ h1 {
   font-size: 16px;
   font-weight: bold;
 }
+  
+  
+  
+  .row-line {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: #444;
+}
 </style>
 </head>
 
@@ -103,7 +111,30 @@ const DEFAULT_SECTIONS = [
   { id: 39, title: "סקשן 39" },
   { id: 40, title: "סקשן 40" }
 ];
+  
+async function renderSections() {
+  const grid = document.getElementById("grid");
+  const sections = await loadSections();
 
+  let html = "";
+
+  sections.forEach((sec, i) => {
+    html += `
+      <div class="card" onclick="goToEdit(${sec.id})">
+        <div class="title">${sec.title}</div>
+      </div>
+    `;
+
+    // 👇 חשוב שזה יהיה אחרי הכרטיס הרביעי
+    if ((i + 1) % 4 === 0 && i !== sections.length - 1) {
+      html += `
+        <div class="row-line"></div>
+      `;
+    }
+  });
+
+  grid.innerHTML = html;
+}
 // יוצר את הסקשנים אם הם עדיין לא קיימים ב-DB
 async function ensureSectionsExist() {
   const { data, error } = await supabaseClient
@@ -156,22 +187,7 @@ async function loadSections() {
 }
 
 // מציג את הסקשנים בגריד
-async function renderSections() {
-  const grid = document.getElementById("grid");
-  const sections = await loadSections();
 
-  let html = "";
-
-  sections.forEach(sec => {
-    html += `
-      <div class="card" onclick="goToEdit(${sec.id})">
-        <div class="title">${sec.title}</div>
-      </div>
-    `;
-  });
-
-  grid.innerHTML = html;
-}
 
 // מעבר לדף עריכה
 function goToEdit(id) {
